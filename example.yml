@@ -2,17 +2,21 @@
   connection: local
   gather_facts: False
   vars:
-    aws_ssh_key_path: "/home/XXXXXX/.ssh/"
+    name_prefix: "demo2"
+    aws_ssh_key_path: "/home/eperry/.ssh/"
     aws_ssh_key_private: "id_rsa"
-    vpc_network: "10.250.250.0/24"
-    vpc_subnet:  "10.250.250.0/24"
+    vpc_network: "10.250.252.0/24"
+    vpc_subnet:  "10.250.252.0/28"
 
   environment: 
-    AWS_ACCESS_KEY_ID: "#####IAM ACCESS ID######"
-    AWS_SECRET_ACCESS_KEY: "#######################"
+  #AWS_ACCESS_KEY_ID: "#####IAM ACCESS ID######"
+  #  AWS_SECRET_ACCESS_KEY: "#######################"
     AWS_DEFAULT_REGION: "us-east-1"
 
   tasks:
+  - include_vars:
+      file: "{{ aws_ssh_key_path }}/aws_console_edwardperry1_root_account.yml"
+
   - name: Getting Centos AMI ID
     ec2_ami_facts:
       owners: "679593333241"
@@ -20,6 +24,8 @@
         product-code: aw0evgkw8e5c1q413zgy5pjce
         architecture: "x86_64"
         name: "CentOS Linux 7 x86_64 HVM EBS ENA*"
+      aws_access_key: "{{ AWSAccessKeyId }}"
+      aws_secret_key: "{{ AWSSecretKey }}"
     register: ami_id
 
   - debug: 
@@ -27,9 +33,11 @@
 
   - name: Make Sure Keypair exists
     ec2_key:
-      name: demo_key
+      name: "{{ name_prefix }}_ssh_key"
       key_material: "{{ lookup('file', '{{ aws_ssh_key_path }}/{{ aws_ssh_key_private }}.pub') }}"
       force: false
+      aws_access_key: "{{ AWSAccessKeyId }}"
+      aws_secret_key: "{{ AWSSecretKey }}"
     register: key_pair
 
   - debug:
@@ -37,9 +45,11 @@
 
   - name: create VPC
     ec2_vpc_net:
-      name: "{{ vpc_network }}"
+      name: "{{ name_prefix }}_{{ vpc_network }}"
       cidr_block: "{{ vpc_network }}"
       state: present
+      aws_access_key: "{{ AWSAccessKeyId }}"
+      aws_secret_key: "{{ AWSSecretKey }}"
     register: vpc
   
   - debug:
@@ -51,6 +61,8 @@
      vpc_id: "{{ vpc.vpc.id }}"
      cidr: "{{ vpc_subnet }}"
      map_public: true
+     aws_access_key: "{{ AWSAccessKeyId }}"
+     aws_secret_key: "{{ AWSSecretKey }}"
     register: subnet
 
   - debug:
@@ -60,10 +72,13 @@
     ec2_vpc_igw:
      vpc_id: "{{ vpc.vpc.id }}"
      state: "present"
+     aws_access_key: "{{ AWSAccessKeyId }}"
+     aws_secret_key: "{{ AWSSecretKey }}"
     register: igw
 
   - debug:
       var: igw
+
   - name: Route IGW
     ec2_vpc_route_table:
       vpc_id: "{{ vpc.vpc.id }}"
@@ -72,10 +87,12 @@
       routes:
         - dest: 0.0.0.0/0
           gateway_id: "{{ igw.gateway_id  }}"
+      aws_access_key: "{{ AWSAccessKeyId }}"
+      aws_secret_key: "{{ AWSSecretKey }}"
 
   - name: "Create VPC Security Group"
     ec2_group:
-      name: "all"
+      name: "{{ name_prefix }}_all"
       vpc_id: "{{ vpc.vpc.id }}"
       description: "Default access"
       rules:
@@ -85,6 +102,8 @@
         - 80
         cidr_ip: 0.0.0.0/0
         rule_desc: allow all on port 22,80
+      aws_access_key: "{{ AWSAccessKeyId }}"
+      aws_secret_key: "{{ AWSSecretKey }}"
     register: security_group
 
   - debug:
@@ -92,7 +111,7 @@
 
   - name: "Provision an instances"
     ec2:
-      id: demo3
+      id: "{{ name_prefix }}_server"
       instance_type: t2.micro
       vpc_subnet_id: "{{ subnet.subnet.id }}"
       image: "{{ ami_id.images[0].image_id }}"
@@ -105,11 +124,12 @@
       group:
       - "{{ security_group.group_name }}"
       instance_tags:
-        name: 'demo3'
-        role: "dns"
+        Name: "{{ name_prefix }}_server"
       wait: yes
       count: 1
       state: present
+      aws_access_key: "{{ AWSAccessKeyId }}"
+      aws_secret_key: "{{ AWSSecretKey }}"
     register: ec2
 
   - debug:
