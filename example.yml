@@ -3,7 +3,7 @@
   gather_facts: False
   vars:
     name_prefix: "demo2"
-    aws_ssh_key_path: "/home/eperry/.ssh/"
+    aws_ssh_key_path: "{{ playbook_dir }}/../.ssh/"
     aws_ssh_key_private: "id_rsa"
     vpc_network: "10.250.252.0/24"
     vpc_subnet:  "10.250.252.0/28"
@@ -15,7 +15,7 @@
 
   tasks:
   - include_vars:
-      file: "{{ aws_ssh_key_path }}/aws_console_edwardperry1_root_account.yml"
+      file: "{{ aws_ssh_key_path }}/aws_console_account.yml"
 
   - name: Getting Centos AMI ID
     ec2_ami_facts:
