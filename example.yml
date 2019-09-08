@@ -11,7 +11,6 @@
   tasks:
   - include_vars:
       file: "{{ aws_ssh_key_path }}/aws_console_edwardperry1_root_account.yml"
-
   - name: Getting Centos AMI ID
     ec2_ami_facts:
       owners: "679593333241"
