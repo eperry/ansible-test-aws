@@ -3,15 +3,10 @@
   gather_facts: False
   vars:
     name_prefix: "demo2"
-    aws_ssh_key_path: "/home/eperry/.ssh/"
+    aws_ssh_key_path: "{{ playbook_dir }}/../.ssh/"
     aws_ssh_key_private: "id_rsa"
     vpc_network: "10.250.252.0/24"
     vpc_subnet:  "10.250.252.0/28"
-
-  environment: 
-  #AWS_ACCESS_KEY_ID: "#####IAM ACCESS ID######"
-  #  AWS_SECRET_ACCESS_KEY: "#######################"
-    AWS_DEFAULT_REGION: "us-east-1"
 
   tasks:
   - include_vars:
